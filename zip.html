@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="js/jszip.min.js"></script>
+    <script src="js/gpx.js"></script>
+    <script src="js/togeojson.js"></script>
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+
+        const geojson = []
+        fetch("data/cameraGPX.zip")       // 1) fetch the url
+            .then(function (response) {                       // 2) filter on 200 OK
+                if (response.status === 200 || response.status === 0) {
+                    return Promise.resolve(response.blob());
+                } else {
+                    return Promise.reject(new Error(response.statusText));
+                }
+            })
+            .then(JSZip.loadAsync)
+            .then(function (zip) {
+                const promises = Object.keys(zip.files).map(file => zip.file(file).async("string"))
+                return Promise.all(promises)
+            })
+            .then(file => {
+                const geo = file.map(data => {
+                    let gpx = new gpxParser(); //Create gpxParser Object
+                    gpx.parse(data); //parse gpx file from string data
+                    let geoJSON = gpx.toGeoJSON();
+                    //geojson.push(geoJSON)
+                    if (geoJSON.features[0]) {
+                        return geoJSON.features[0]
+                    }
+                })
+                console.log('geo', JSON.stringify({
+                    "type": "FeatureCollection",
+                    "features": geo
+                }));
+            })
+
+
+    </script>
+</body>
+
+</html>
